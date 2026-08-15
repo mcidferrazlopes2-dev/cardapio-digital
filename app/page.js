@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
+import ModalPagamento from './components/ModalPagamento';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [nome, setNome] = useState('');
@@ -107,11 +107,6 @@ export default function Home() {
     </div>
   );
 }
-
-'use client';
-import { useState, useEffect } from 'react';
-import ModalPagamento from './components/ModalPagamento'; // Ajuste o caminho do arquivo se necessário
-import { supabase } from '@/lib/supabase';
 
 export default function Painel() {
   const [cardapio, setCardapio] = useState(null);
