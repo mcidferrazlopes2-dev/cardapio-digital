@@ -45,10 +45,10 @@ export default function Home() {
     setLoading(true);
 
     const { data, error } = await supabase
-      .from('cardapios')
-      .insert([{ nome, slug, descricao, user_id: user.id }])
-      .select()
-      .single();
+  .from('cardapios')
+  .insert([{ nome_estabelecimento: nome, slug, descricao, user_id: user.id }])
+  .select()
+  .single();
 
     if (error) {
       alert('Erro ao criar cardápio: ' + error.message);
