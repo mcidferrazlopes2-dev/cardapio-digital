@@ -107,3 +107,63 @@ export default function Home() {
     </div>
   );
 }
+
+'use client';
+import { useState, useEffect } from 'react';
+import ModalPagamento from './components/ModalPagamento'; // Ajuste o caminho do arquivo se necessário
+import { supabase } from '@/lib/supabase';
+
+export default function Painel() {
+  const [cardapio, setCardapio] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Busca os dados do cardápio do usuário logado
+  useEffect(() => {
+    async function carregarCardapio() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('cardapios')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data) setCardapio(data);
+      }
+    }
+    carregarCardapio();
+  }, []);
+
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      {/* Banner só aparece se o pagamento estiver pendente */}
+      {cardapio && cardapio.status_pagamento !== 'ativo' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-amber-900">Seu plano está pendente</h3>
+            <p className="text-sm text-amber-700">Ative sua assinatura para manter seu cardápio online e receber pedidos.</p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-green-600 text-white font-medium px-5 py-2.5 rounded-xl hover:bg-green-700 transition shadow-sm whitespace-nowrap"
+          >
+            Ativar por R$ 29,90/mês
+          </button>
+        </div>
+      )}
+
+      {/* Conteúdo principal do seu painel (Categorias, Produtos, etc) */}
+      <h1 className="text-2xl font-bold mb-4">Gerenciador do Cardápio</h1>
+
+      {/* Modal de Pagamento PIX */}
+      {cardapio && (
+        <ModalPagamento
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          cardapioId={cardapio.id}
+          emailUsuario={cardapio.email || 'cliente@email.com'}
+        />
+      )}
+    </div>
+  );
+}
