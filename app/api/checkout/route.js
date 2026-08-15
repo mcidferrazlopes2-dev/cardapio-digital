@@ -1,30 +1,55 @@
 import { NextResponse } from 'next/server';
-import { MercadoPagoConfig, Payment } from 'mercadopago';
-
-const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
-const payment = new Payment(client);
 
 export async function POST(request) {
   try {
-    const { email, cardapioId } = await request.json();
+    const token = process.env.MERCADOPAGO_ACCESS_TOKEN;
 
-    const body = {
-      transaction_amount: 29.90,
-      description: 'Assinatura Mensal Cardápio Digital',
-      payment_method_id: 'pix',
-      payer: { email },
-      metadata: { cardapio_id: cardapioId },
-    };
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Chave MERCADOPAGO_ACCESS_TOKEN não configurada na Vercel.' },
+        { status: 500 }
+      );
+    }
 
-    const response = await payment.create({ body });
+    const body = await request.json().catch(() => ({}));
+    const { cardapioId, emailUsuario } = body;
+
+    const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token.trim()}`,
+      },
+      body: JSON.stringify({
+        transaction_amount: 29.90,
+        description: 'Assinatura Plano Mensal Cardápio Digital',
+        payment_method_id: 'pix',
+        payer: {
+          email: emailUsuario || 'cliente@email.com',
+          first_name: 'Cliente',
+        },
+        external_reference: String(cardapioId || '1'),
+      }),
+    });
+
+    const data = await mpResponse.json();
+
+    if (!mpResponse.ok) {
+      return NextResponse.json(
+        { error: data.message || 'Erro do Mercado Pago' },
+        { status: mpResponse.status }
+      );
+    }
 
     return NextResponse.json({
-      id: response.id,
-      qr_code: response.point_of_interaction?.transaction_data?.qr_code,
-      qr_code_base64: response.point_of_interaction?.transaction_data?.qr_code_base64,
-      ticket_url: response.point_of_interaction?.transaction_data?.ticket_url,
+      qr_code: data.point_of_interaction?.transaction_data?.qr_code,
+      qr_code_base64: data.point_of_interaction?.transaction_data?.qr_code_base64,
+      payment_id: data.id,
     });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err.message || 'Falha no processamento interno' },
+      { status: 500 }
+    );
   }
 }
